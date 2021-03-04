@@ -67,14 +67,15 @@ public class ExcelHelper {
 			ExcelContent excelContent, List<ExcelErr> excelErrList) throws Exception {
 		List<List<WrapCell>> contents = excelContent.getContents();
 		int lines = 1;
-		List<Integer> hashCodeMap = new ArrayList<>();
 		List<T> entityList = new ArrayList<>();
-		List<List<CellUnique>> uniqueLines = new ArrayList<>();
+		List<List<CellUnique>> uniqueOneLines = new ArrayList<>();
+		List<List<CellUnique>> uniqueTwoLines = new ArrayList<>();
 		for (List<WrapCell> content : contents) {
 			lines++;
 			T t = c.newInstance();
 			boolean ok = true;
-			List<CellUnique> uniqueList = new ArrayList<>();
+			List<CellUnique> uniqueOneList = new ArrayList<>();
+			List<CellUnique> uniqueTwoList = new ArrayList<>();
 			for (Map.Entry<String, Integer> entry : fieldMap.entrySet()) {
 				int index = entry.getValue();
 				String columName = excelContent.getHeaders().get(index).getName();
@@ -96,7 +97,8 @@ public class ExcelHelper {
 				}
 				Excel annotation = field.getAnnotation(Excel.class);
 				if (annotation != null && annotation.unique()) {
-					uniqueList.add(CellUnique.of(virtualLine, columName, excellValue));
+					uniqueOneList.add(CellUnique.one(columName, excellValue));
+					uniqueTwoList.add(CellUnique.two(virtualLine, columName, excellValue));
 				}
 				field.setAccessible(true);
 				field.set(t, v);
@@ -104,19 +106,18 @@ public class ExcelHelper {
 			if (!ok) {
 				continue;
 			}
-			if (!uniqueList.isEmpty()) {
-				int hashCode = hashCode(uniqueList);
-				if (hashCodeMap.contains(hashCode)) {
-					if (!uniqueLines.contains(uniqueList)) {
-						List<String> keys = uniqueList.stream().map(e -> e.getCellName()).collect(Collectors.toList());
-						List<String> values = uniqueList.stream().map(e -> e.getCellValue())
+			if (!uniqueOneList.isEmpty()) {
+				if(uniqueOneLines.contains(uniqueOneList)) {
+					if(!uniqueTwoLines.contains(uniqueTwoList)) {
+						List<String> keys = uniqueOneList.stream().map(e -> e.getCellName()).collect(Collectors.toList());
+						List<String> values = uniqueOneList.stream().map(e -> e.getCellValue())
 								.collect(Collectors.toList());
 						excelErrList.add(ExcelErr.err(keys.toString(), lines, values, "唯一约束字段出现重复!!!"));
 						continue;
 					}
-				} else {
-					hashCodeMap.add(hashCode);
-					uniqueLines.add(uniqueList);
+				}else {
+					uniqueOneLines.add(uniqueOneList);
+					uniqueTwoLines.add(uniqueTwoList);
 				}
 			}
 
@@ -270,10 +271,13 @@ public class ExcelHelper {
 			this.cellValue = cellValue;
 		}
 
-		public static CellUnique of(int virtualLine,String cellName, String cellValue) {
+		public static CellUnique one(String cellName, String cellValue) {
+			return new CellUnique(0,cellName, cellValue);
+		}
+		
+		public static CellUnique two(int virtualLine,String cellName, String cellValue) {
 			return new CellUnique(virtualLine,cellName, cellValue);
 		}
-
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -283,7 +287,6 @@ public class ExcelHelper {
 			result = prime * result + virtualLine;
 			return result;
 		}
-
 		@Override
 		public boolean equals(Object obj) {
 			if (this == obj)
