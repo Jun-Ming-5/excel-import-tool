@@ -11,8 +11,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -81,6 +83,7 @@ public class JdbcBatch {
 		List<String> insertFieldNameList = new ArrayList<>();
 		List<String> updateFieldNameList = new ArrayList<>();
 		Set<String> uniqueFieldNameList = new HashSet<>();
+		Map<String,FieldValueMap> map = new HashMap<>();
 		for (FieldValueMap f : fieldValues) {
 			insertFieldNameList.add(f.fieldName);
 			if (3 == f.keyType) {
@@ -89,16 +92,19 @@ public class JdbcBatch {
 			if (2 == f.keyType) {
 				uniqueFieldNameList.add(f.fieldName);
 			}
+			map.put(f.fieldName, f);
 		}
+		
 
 		String sql = createSql(table, uniqueFieldNameList, insertFieldNameList, updateFieldNameList, sqlInterface);
 		return jdbcTemplate.execute(new ConnectionCallback<Integer>() {
 			@Override
 			public Integer doInConnection(Connection connection) throws SQLException, DataAccessException {
 				try (PreparedStatement prepareStatement = connection.prepareStatement(sql)) {
-					int fieldCounts = fieldValues.size();
+					int fieldCounts = insertFieldNameList.size();
 					for (int i = 0; i < fieldCounts; i++) {
-						FieldValueMap fvm = fieldValues.get(i);
+						String fieldName = insertFieldNameList.get(i);
+						FieldValueMap fvm = map.get(fieldName);
 						prepareStatement.setArray(i + 1, connection.createArrayOf(fvm.jdbcType.getName(), fvm.values));
 					}
 					return prepareStatement.executeUpdate();
@@ -222,6 +228,7 @@ public class JdbcBatch {
 					}
 					FieldValueMap oneFieldValue = convertOneField(ef, embFieldValues);
 					oneFieldValue.fieldName = field.getName() + "_" + ef.getName();
+					oneFieldValue.keyType = 3;
 					fieldValues.add(oneFieldValue);
 				}
 				continue;
