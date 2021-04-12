@@ -231,7 +231,6 @@ public class JdbcBatch {
 					oneFieldValue.keyType = 3;
 					fieldValues.add(oneFieldValue);
 				}
-				continue;
 			}
 		}
 		return fieldValues;
@@ -267,7 +266,7 @@ public class JdbcBatch {
 
 	public static String createSql(String tableName, Set<String> uniques, List<String> insertFieldNameList,
 			List<String> updateFieldNameList, SqlInterface sqlInterface) {
-		if (CollectionUtils.isEmpty(updateFieldNameList)) {
+		if (CollectionUtils.isEmpty(uniques)) {
 			return sqlInterface.createBatchInsertSql(tableName, insertFieldNameList);
 		} else {
 			return sqlInterface.createBatchInsertAndUpdateSql(tableName, String.join(",", uniques), insertFieldNameList,
