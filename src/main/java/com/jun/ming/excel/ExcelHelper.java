@@ -149,7 +149,9 @@ public class ExcelHelper {
 			return cellValue;
 		} else if (type == Integer.class || type == int.class) {
 			return Integer.valueOf(cellValue);
-		} else if (type == BigDecimal.class) {
+		} else if(type == Long.class || type == long.class){
+			return Long.valueOf(cellValue);
+		}else if (type == BigDecimal.class) {
 			BigDecimal value = new BigDecimal(cellValue);
 			if (annotation.precision() == 0 && annotation.scale() == 0) {
 				return value;
