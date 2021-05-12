@@ -269,7 +269,7 @@ public class JdbcBatch {
 		if (CollectionUtils.isEmpty(uniques)) {
 			return sqlInterface.createBatchInsertSql(tableName, insertFieldNameList);
 		} else {
-			return sqlInterface.createBatchInsertAndUpdateSql(tableName, String.join(",", uniques), insertFieldNameList,
+			return sqlInterface.createBatchInsertAndUpdateSql(tableName, uniques, insertFieldNameList,
 					updateFieldNameList);
 		}
 	}

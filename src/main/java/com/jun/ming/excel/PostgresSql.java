@@ -2,29 +2,19 @@ package com.jun.ming.excel;
 
 import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class PostgresSql implements SqlInterface {
 	
 	@Override
-	public String createBatchInsertAndUpdateSql(String tableName, String unique, List<String> insertFieldNameList,
-			List<String> updateFieldNameList) {
+	public String createBatchInsertAndUpdateSql(String tableName, Set<String> unique, List<String> insertFieldNameList,
+												List<String> updateFieldNameList) {
 		String insertSql = createBatchInsertSql(tableName,insertFieldNameList);
-		if(CollectionUtils.isNotEmpty(updateFieldNameList)) {
-			String conflictSql = " ON CONFLICT ( $unique ) DO UPDATE SET $param3";
-			conflictSql = conflictSql.replace("$unique",unique);
-			List<String> updateParam = new ArrayList<>(updateFieldNameList.size());
-			for (String fieldName : updateFieldNameList) {
-				String s = fieldName + "=excluded." + fieldName;
-				updateParam.add(s);
-			}
-			String params3 = String.join(",", updateParam);
-			conflictSql = conflictSql.replace("$param3", params3);
-			insertSql = insertSql+conflictSql;
-		}
-		return insertSql;
+		String conflictSql = " ON CONFLICT ( $unique ) DO UPDATE SET $params";
+		conflictSql = conflictSql.replace("$unique",String.join(",",unique));
+		String params = CollectionUtils.isNotEmpty(updateFieldNameList) ? getUpdateParams(updateFieldNameList) : getUpdateParams(unique);
+		conflictSql = conflictSql.replace("$params", params);
+		return insertSql+conflictSql;
 	}
 
 	@Override
@@ -37,5 +27,14 @@ public class PostgresSql implements SqlInterface {
 		String params2 = String.join(",", unnestList);
 		sql = sql.replace("$param2", params2);
 		return sql;
+	}
+
+	private String getUpdateParams(Collection<String> fields){
+		List<String> updateParam = new ArrayList<>(fields.size());
+		for (String fieldName : fields) {
+			String s = fieldName + "=excluded." + fieldName;
+			updateParam.add(s);
+		}
+		return String.join(",", updateParam);
 	}
 }
